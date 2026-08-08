@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>아고다 자동완성 테스트</title>
+</head>
+<body style="font-family:sans-serif;padding:20px">
+<h2>아고다 호텔 검색 테스트</h2>
+<div style="display:flex;gap:8px;margin-bottom:16px">
+  <input id="keyword" type="text" placeholder="호텔명 입력 (예: 신라호텔 서울)" 
+    style="flex:1;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
+  <button onclick="search()" 
+    style="padding:12px 20px;background:#003580;color:#fff;border:none;border-radius:8px;cursor:pointer">검색</button>
+</div>
+<div id="result" style="font-size:13px"></div>
+
+<script>
+async function search(){
+  const keyword = document.getElementById('keyword').value.trim();
+  if(!keyword) return;
+  document.getElementById('result').innerHTML = '검색 중...';
+  try {
+    const res = await fetch('https://waylo-agoda.twoare123.workers.dev/autocomplete?q='+encodeURIComponent(keyword));
+    const data = await res.json();
+    console.log(data);
+    
+    if(!data || !data.length) {
+      document.getElementById('result').innerHTML = '❌ 결과 없음: ' + JSON.stringify(data).slice(0,200);
+      return;
+    }
+    
+    // 호텔 타입만 필터
+    const hotels = data.filter(d => d.ObjectType === 'Hotel' || d.type === 'hotel' || d.PropertyId);
+    let html = `✅ 총 ${data.length}개 결과 (호텔 ${hotels.length}개)<br><br>`;
+    
+    data.slice(0,10).forEach(d => {
+      html += `<div style="border:1px solid #ddd;padding:10px;margin-bottom:6px;border-radius:8px">
+        <b>${d.Name||d.name||JSON.stringify(d).slice(0,100)}</b><br>
+        <small>타입: ${d.ObjectType||d.type||'-'} | ID: ${d.ObjectId||d.object_id||d.PropertyId||'-'}</small>
+      </div>`;
+    });
+    document.getElementById('result').innerHTML = html;
+  } catch(e) {
+    document.getElementById('result').innerHTML = '❌ 오류: ' + e.message;
+  }
+}
+document.getElementById('keyword').addEventListener('keyup', e => { if(e.key==='Enter') search(); });
+</script>
+</body>
+</html>
